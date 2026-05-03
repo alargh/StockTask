@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Market</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f7f6f3;
+  --surface:#ffffff;
+  --border:#e8e6e1;
+  --text:#1a1916;
+  --muted:#8a8780;
+  --green:#1a7a4a;
+  --green-bg:#edf7f1;
+  --red:#c0392b;
+  --red-bg:#fdf0ee;
+  --mono:'DM Mono',monospace;
+  --sans:'DM Sans',sans-serif;
+  --radius:10px;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;font-size:14px;line-height:1.5}
+
+.app{display:grid;grid-template-rows:52px 1fr;height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.topbar-brand{font-family:var(--mono);font-size:13px;font-weight:500;letter-spacing:.04em}
+.status{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0}
+.dot.offline{background:var(--red)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.dot.live{animation:blink 2s ease-in-out infinite}
+
+.main{display:grid;grid-template-columns:1fr 1fr 320px;grid-template-rows:auto 1fr;overflow:hidden;gap:1px;background:var(--border)}
+
+.panel{background:var(--surface);display:flex;flex-direction:column;overflow:hidden;min-height:0}
+.ph{padding:14px 20px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ph-title{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.ph-badge{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1px 6px}
+.pb{flex:1;overflow-y:auto;min-height:0}
+.pb::-webkit-scrollbar{width:3px}
+.pb::-webkit-scrollbar-thumb{background:var(--border)}
+
+.bank-chips{display:flex;flex-wrap:wrap;gap:8px;padding:14px 20px}
+.chip{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:8px 14px;cursor:pointer;transition:border-color .15s;user-select:none}
+.chip:hover{border-color:#c8c6c0}
+.chip-name{font-family:var(--mono);font-size:12px;font-weight:500}
+.chip-qty{font-family:var(--mono);font-size:20px}
+.chip-lbl{font-size:10px;color:var(--muted);letter-spacing:.03em}
+
+.admin{padding:0 20px 14px;display:flex;gap:6px;align-items:center}
+.admin input{font-family:var(--mono);font-size:12px;flex:1;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);outline:none;transition:border-color .15s;min-width:0}
+.admin input:focus{border-color:#a8a5a0}
+.admin input[type=number]{max-width:64px;flex:none}
+.admin button{font-family:var(--mono);font-size:11px;padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:var(--surface);cursor:pointer;white-space:nowrap;color:var(--text)}
+.admin button:hover{background:var(--bg)}
+
+.wrow{padding:10px 20px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
+.wrow:hover{background:var(--bg)}
+.wrow:last-child{border-bottom:none}
+.wrow-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.wid{font-family:var(--mono);font-size:12px;font-weight:500}
+.wchips{display:flex;flex-wrap:wrap;gap:4px}
+.mini{font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 7px}
+
+.lrow{display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+.lrow.new{animation:fadeIn .2s ease}
+.lrow:last-child{border-bottom:none}
+.lbadge{font-family:var(--mono);font-size:10px;font-weight:500;padding:2px 6px;border-radius:3px;width:34px;text-align:center;flex-shrink:0}
+.lbadge.buy{background:var(--green-bg);color:var(--green)}
+.lbadge.sell{background:var(--red-bg);color:var(--red)}
+.lwallet{font-family:var(--mono);font-size:11px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lstock{font-family:var(--mono);font-size:11px;font-weight:500}
+.lnum{font-family:var(--mono);font-size:10px;color:var(--muted);flex-shrink:0}
+
+.tform{padding:18px 20px;flex:1;overflow-y:auto}
+.tform::-webkit-scrollbar{width:3px}
+.tform::-webkit-scrollbar-thumb{background:var(--border)}
+.field{margin-bottom:13px}
+.field label{display:block;font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.field input,.field select{width:100%;font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 9px;color:var(--text);outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus{border-color:#a8a5a0}
+.toggle{display:flex;gap:5px}
+.tbtn{flex:1;font-family:var(--mono);font-size:12px;padding:7px;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer;color:var(--muted);transition:all .15s}
+.tbtn.active.buy{background:var(--green-bg);border-color:#9dd4b4;color:var(--green)}
+.tbtn.active.sell{background:var(--red-bg);border-color:#e0b0aa;color:var(--red)}
+.sbtn{width:100%;font-family:var(--mono);font-size:12px;padding:10px;border-radius:7px;border:none;background:var(--text);color:#fff;cursor:pointer;margin-top:4px;transition:opacity .15s}
+.sbtn:hover{opacity:.82}
+.sbtn.secondary{background:var(--muted);margin-top:0}
+.msg{font-size:11px;margin-top:8px;padding:7px 9px;border-radius:6px;text-align:center;font-family:var(--mono)}
+.msg.ok{background:var(--green-bg);color:var(--green)}
+.msg.err{background:var(--red-bg);color:var(--red)}
+.divider{height:1px;background:var(--border);margin:16px 0}
+.slabel{font-size:10px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:block}
+.lookup-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:11px;margin-top:10px;font-family:var(--mono);font-size:11px}
+.lookup-card-id{color:var(--muted);margin-bottom:7px}
+.lookup-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border)}
+.lookup-row:last-child{border-bottom:none}
+
+.empty{color:var(--muted);font-size:11px;font-family:var(--mono);padding:16px 20px;text-align:center}
+.sbtn.danger{background:var(--red);margin-top:8px}
+.sbtn.danger:hover{opacity:.9}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <span class="topbar-brand">STOCK MARKET</span>
+    <div class="status">
+      <span class="dot live" id="dot"></span>
+      <span id="status-text">connecting</span>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <div class="panel" style="grid-column:1/3;grid-row:1">
+      <div class="ph">
+        <span class="ph-title">Bank reserves</span>
+        <span class="ph-badge" id="bank-badge">–</span>
+      </div>
+      <div class="bank-chips" id="bank-chips"><span class="empty">No stocks yet — add below</span></div>
+      <div class="admin">
+        <input id="b-name" placeholder="stock name" autocomplete="off"/>
+        <input id="b-qty" type="number" min="0" placeholder="qty"/>
+        <button onclick="addStock()">Set stock</button>
+      </div>
+    </div>
+
+    <div class="panel" style="grid-column:1;grid-row:2">
+      <div class="ph">
+        <span class="ph-title">Wallets</span>
+        <span class="ph-badge" id="wallet-badge">0</span>
+      </div>
+      <div class="pb" id="wallets-body"><div class="empty">No wallets yet</div></div>
+    </div>
+
+    <div class="panel" style="grid-column:2;grid-row:2">
+      <div class="ph">
+        <span class="ph-title">Audit log</span>
+        <span class="ph-badge" id="log-badge">0 ops</span>
+      </div>
+      <div class="pb" id="log-body"><div class="empty">No operations yet</div></div>
+    </div>
+
+    <div class="panel" style="grid-column:3;grid-row:1/3">
+      <div class="ph"><span class="ph-title">Execute trade</span></div>
+      <div class="tform">
+        <div class="field">
+          <label>Wallet ID</label>
+          <input id="t-wallet" placeholder="e.g. alice" autocomplete="off"/>
+        </div>
+        <div class="field">
+          <label>Stock</label>
+          <input id="t-stock" placeholder="e.g. AAPL" autocomplete="off"/>
+        </div>
+        <div class="field">
+          <label>Operation</label>
+          <div class="toggle">
+            <button class="tbtn active buy" id="btn-buy" onclick="setType('buy')">BUY</button>
+            <button class="tbtn sell" id="btn-sell" onclick="setType('sell')">SELL</button>
+          </div>
+        </div>
+        <button class="sbtn" onclick="trade()">Execute →</button>
+        <div id="trade-msg" style="display:none" class="msg"></div>
+
+        <div class="divider"></div>
+        <span class="slabel">Wallet lookup</span>
+        <div class="field">
+          <label>Wallet ID</label>
+          <input id="l-wallet" placeholder="wallet id" autocomplete="off"/>
+        </div>
+        <button class="sbtn secondary" onclick="lookup()">Lookup →</button>
+        <div id="lookup-out"></div>
+
+        <div class="divider"></div>
+        <span class="slabel">Chaos testing</span>
+        <button class="sbtn danger" onclick="if(confirm('Kill this instance?')) chaos()">Kill instance</button>
+        <div id="chaos-msg" style="display:none" class="msg"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const BASE = '';
+
+let tradeType = 'buy';
+let knownWallets = new Set();
+let lastLogLen = 0;
+
+function setType(t) {
+  tradeType = t;
+  document.getElementById('btn-buy').className = 'tbtn' + (t==='buy' ? ' active buy' : '');
+  document.getElementById('btn-sell').className = 'tbtn' + (t==='sell' ? ' active sell' : '');
+}
+
+async function api(path, opts={}) {
+  const r = await fetch(BASE + path, {headers:{'Content-Type':'application/json'}, ...opts});
+  const ct = r.headers.get('content-type') || '';
+  const data = ct.includes('json') ? await r.json() : await r.text();
+  return {ok: r.ok, status: r.status, data};
+}
+
+
+function renderBank(stocks) {
+  const el = document.getElementById('bank-chips');
+  document.getElementById('bank-badge').textContent = stocks.length + ' stock' + (stocks.length !== 1 ? 's' : '');
+  if (!stocks.length) { el.innerHTML = '<span class="empty">No stocks yet — add below</span>'; return; }
+  el.innerHTML = stocks.map(s => `
+    <div class="chip" onclick="prefill('${s.name}')">
+      <div><div class="chip-name">${esc(s.name)}</div><div class="chip-lbl">available</div></div>
+      <div class="chip-qty">${s.quantity}</div>
+    </div>`).join('');
+}
+
+function renderLog(log) {
+  const el = document.getElementById('log-body');
+  document.getElementById('log-badge').textContent = log.length + ' ops';
+  if (!log.length) { el.innerHTML = '<div class="empty">No operations yet</div>'; return; }
+  const reversed = [...log].reverse();
+  const isNew = log.length > lastLogLen;
+  el.innerHTML = reversed.map((l, i) => `
+    <div class="lrow${i === 0 && isNew ? ' new' : ''}">
+      <span class="lbadge ${l.type}">${l.type.toUpperCase()}</span>
+      <span class="lwallet">${esc(l.wallet_id)}</span>
+      <span class="lstock">${esc(l.stock_name)}</span>
+      <span class="lnum">#${log.length - i}</span>
+    </div>`).join('');
+  lastLogLen = log.length;
+  log.forEach(l => knownWallets.add(l.wallet_id));
+}
+
+function renderWallets(wallets) {
+  const el = document.getElementById('wallets-body');
+  document.getElementById('wallet-badge').textContent = wallets.length;
+  if (!wallets.length) { el.innerHTML = '<div class="empty">No wallets yet</div>'; return; }
+  el.innerHTML = wallets.map(w => {
+    const stocks = (w.stocks || []).filter(s => s.quantity > 0);
+    return `<div class="wrow" onclick="prefill(null,'${esc(w.id)}')">
+      <div class="wrow-top">
+        <span class="wid">${esc(w.id)}</span>
+        <span style="font-size:10px;color:var(--muted)">${stocks.length} stock${stocks.length!==1?'s':''}</span>
+      </div>
+      <div class="wchips">
+        ${stocks.length
+          ? stocks.map(s => `<span class="mini">${esc(s.name)} · ${s.quantity}</span>`).join('')
+          : '<span style="font-size:11px;color:var(--muted);font-family:var(--mono)">empty</span>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
+async function refresh() {
+  try {
+    const [bankRes, logRes] = await Promise.all([api('/stocks'), api('/log')]);
+    if (bankRes.ok) renderBank(bankRes.data.stocks || []);
+    if (logRes.ok) renderLog(logRes.data.log || []);
+
+    const wallets = [];
+    for (const id of knownWallets) {
+      const {ok, data} = await api(`/wallets/${encodeURIComponent(id)}`);
+      if (ok) wallets.push(data);
+    }
+    renderWallets(wallets);
+
+    setStatus(true);
+  } catch(e) {
+    setStatus(false);
+  }
+}
+
+function setStatus(online) {
+  document.getElementById('dot').className = 'dot' + (online ? ' live' : ' offline');
+  document.getElementById('status-text').textContent = online ? 'connected' : 'offline';
+}
+
+
+function prefill(stock, wallet) {
+  if (stock) document.getElementById('t-stock').value = stock;
+  if (wallet) {
+    document.getElementById('t-wallet').value = wallet;
+    document.getElementById('l-wallet').value = wallet;
+  }
+}
+
+async function addStock() {
+  const name = document.getElementById('b-name').value.trim();
+  const qty = parseInt(document.getElementById('b-qty').value, 10);
+  if (!name || isNaN(qty) || qty < 0) return;
+  const {ok} = await api('/stocks', {method:'POST', body: JSON.stringify({stocks:[{name, quantity:qty}]})});
+  if (ok) { document.getElementById('b-name').value = ''; document.getElementById('b-qty').value = ''; refresh(); }
+}
+
+function showMsg(id, text, isOk) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = 'msg ' + (isOk ? 'ok' : 'err');
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.style.display = 'none', 3500);
+}
+
+async function trade() {
+  const wallet = document.getElementById('t-wallet').value.trim();
+  const stock  = document.getElementById('t-stock').value.trim();
+  if (!wallet || !stock) { showMsg('trade-msg', 'wallet id and stock required', false); return; }
+  const {ok, status, data} = await api(
+    `/wallets/${encodeURIComponent(wallet)}/stocks/${encodeURIComponent(stock)}`,
+    {method:'POST', body: JSON.stringify({type: tradeType})}
+  );
+  if (ok) {
+    showMsg('trade-msg', `${tradeType.toUpperCase()} executed`, true);
+    knownWallets.add(wallet);
+    refresh();
+  } else {
+    showMsg('trade-msg', data?.detail || `HTTP ${status}`, false);
+  }
+}
+
+async function lookup() {
+  const id = document.getElementById('l-wallet').value.trim();
+  if (!id) return;
+  const {ok, data} = await api(`/wallets/${encodeURIComponent(id)}`);
+  const out = document.getElementById('lookup-out');
+  if (!ok) { out.innerHTML = '<div class="msg err" style="margin-top:8px">Wallet not found</div>'; return; }
+  const stocks = (data.stocks || []).filter(s => s.quantity > 0);
+  out.innerHTML = `<div class="lookup-card">
+    <div class="lookup-card-id">${esc(data.id)}</div>
+    ${stocks.length
+      ? stocks.map(s => `<div class="lookup-row"><span>${esc(s.name)}</span><span>${s.quantity}</span></div>`).join('')
+      : '<div style="color:var(--muted)">empty wallet</div>'}
+  </div>`;
+}
+
+async function chaos() {
+  try {
+    await api('/chaos', {method:'POST'});
+    showMsg('chaos-msg', 'Instance killed (will restart)', true);
+  } catch(e) {
+    showMsg('chaos-msg', 'Request failed (instance likely dead)', true);
+  }
+  setTimeout(() => refresh(), 2000);
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* keyboard shortcuts */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    if (document.activeElement.id === 'b-qty') addStock();
+    if (document.activeElement.id === 't-stock' || document.activeElement.id === 't-wallet') trade();
+    if (document.activeElement.id === 'l-wallet') lookup();
+  }
+});
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>
